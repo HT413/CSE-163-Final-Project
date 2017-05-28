@@ -120,6 +120,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="shaders\ashikhmin.frag" />
+    <None Include="shaders\phong.frag" />
+    <None Include="shaders\basic.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
