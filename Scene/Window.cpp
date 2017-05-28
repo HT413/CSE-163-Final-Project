@@ -1,5 +1,6 @@
 #include "Window.h"
 #include "Shader.hpp"
+#include "OBJObject.h"
 
 // Window width and height
 int width, height;

@@ -123,10 +123,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="OBJObject.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Globals.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="OBJObject.h" />
     <ClInclude Include="Shader.hpp" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
