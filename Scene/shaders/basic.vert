@@ -16,6 +16,7 @@ out vec3 normal;
 
 void main(){
 	gl_Position = projection * view * model * vec4(pos, 1.0);
-	position = vec3(model * vec4(pos, 1.0));
-	normal = inverse(transpose(mat3(model))) * norm;
+	vec4 posn = model * vec4(pos, 1.0);
+	position = posn.xyz / posn.w;
+	normal = vec3(inverse(transpose(model)) * vec4(norm, 0));
 }

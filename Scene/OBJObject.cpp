@@ -96,6 +96,7 @@ void OBJObject::parse(const char * filepath) {
 	float avgY = (maxY + minY) / 2.0f;
 	float avgZ = (maxZ + minZ) / 2.0f;
 	float maxDimension = std::max((maxX - minX), std::max((maxY - minY), (maxZ - minZ)));
+	maxDimension /= 5.f;
 
 	// Loop through list of vertices and replace with the adjusted vertices
 	for (int i = 0; i < vertices.size(); ++i) {
@@ -104,13 +105,11 @@ void OBJObject::parse(const char * filepath) {
 	}
 
 	cout << "All done!" << endl;
-	cout << "Number of vertices: " << vertices.size() << endl;
-	cout << "Number of indices: " << indices.size() << "\n" << endl;
 }
 
-glm::mat4 compoundRotation(1.0f);
-
 void OBJObject::draw(GLuint shaderProgram) {
+	if(usingPhong) mat->bindMaterial();
+	else a_mat->bindMaterial();
 	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, &(model[0][0]));
 
 	glBindVertexArray(VAO);
