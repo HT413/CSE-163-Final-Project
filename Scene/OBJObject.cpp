@@ -20,12 +20,12 @@ OBJObject::OBJObject(const char * filepath) {
 	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec3), &vertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, NBO);
-	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(vec3), &normals[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 
@@ -68,7 +68,7 @@ void OBJObject::parse(const char * filepath) {
 
 		if ((c1 == 'v') && (c2 == ' ')){
 			fscanf(fp, "%f %f %f", &x, &y, &z);
-			vertices.push_back(glm::vec3(x, y, z));
+			vertices.push_back(vec3(x, y, z));
 			if (x < minX) minX = x;
 			if (y < minY) minY = y;
 			if (z < minZ) minZ = z;
@@ -78,7 +78,7 @@ void OBJObject::parse(const char * filepath) {
 		}
 		else if ((c1 == 'v') && (c2 == 'n')){
 			fscanf(fp, "%f %f %f", &x, &y, &z);
-			normals.push_back(glm::normalize(glm::vec3(x, y, z)));
+			normals.push_back(glm::normalize(vec3(x, y, z)));
 		}
 		else if (c1 == 'f')
 		{
@@ -100,7 +100,7 @@ void OBJObject::parse(const char * filepath) {
 
 	// Loop through list of vertices and replace with the adjusted vertices
 	for (int i = 0; i < vertices.size(); ++i) {
-		glm::vec3 shiftedVertex = (vertices[i] - glm::vec3(avgX, avgY, avgZ)) / maxDimension;
+		vec3 shiftedVertex = (vertices[i] - vec3(avgX, avgY, avgZ)) / maxDimension;
 		vertices[i] = shiftedVertex;
 	}
 

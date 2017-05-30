@@ -30,7 +30,7 @@ void main(){
 		vec3 lightCol = lightCols[i];
 		vec3 lightDir;
 		if(lightPos.w < 0.0001){ // Directional light
-			lightDir = normalize((-lightPos).xyz);
+			lightDir = normalize((lightPos).xyz);
 		}
 		else{ // Point light
 			lightDir = lightPos.xyz - position;

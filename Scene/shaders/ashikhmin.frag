@@ -2,7 +2,7 @@
 #version 410
 
 // Definitions if any
-const float M_PI = 3.14159265359f;
+const float M_PI = 1.0f; // 3.14159265359f;
 const int maxLights = 8;
 
 // Inputs
@@ -37,7 +37,7 @@ void main(){
 		vec3 lightCol = lightCols[i];
 		vec3 k2;
 		if(lightPos.w < 0.001){
-			k2 = normalize(vec3(-lightPos));
+			k2 = normalize(vec3(lightPos));
 		} else{
 			k2 = normalize(vec3(lightPos) - position);
 		}
@@ -47,7 +47,7 @@ void main(){
 			pow(dot(normal, halfVec), ((n_u * pow(dot(halfVec, uVec), 2) + n_v *
 			pow(dot(halfVec, vVec), 2)) / (1.0 - pow(dot(halfVec, normal), 2)))) /
 			(dot(halfVec, k1) * max(dot(normal, k1), dot(normal, k2)));
-		float diff = ((28.0 * rd) / (23.0 * M_PI)) * (1.0 - rs) *		(1.0 - pow(1.0 - dot(normal, k1) / 2.f, 5)) *		(1.0 - pow(1.0 - dot(normal, k2) / 2.f, 5));
+		float diff = ((28.0 * rd) / (23.0 * M_PI)) * rd *		(1.0 - pow(1.0 - dot(normal, k1) / 2.f, 5)) *		(1.0 - pow(1.0 - dot(normal, k2) / 2.f, 5));
 		output += diff * diffuse * lightCol + spec * specular * lightCol;
 	}
 	fragColor = vec4(output, 1.0);

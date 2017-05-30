@@ -27,12 +27,12 @@ vec3 goldDiffuse_p = vec3(.75164f, .60648f, .22648f);
 vec3 goldSpecular_p = vec3(.628281f, .555802f, .366065f);
 float goldShininess = 100.f;
 
-vec3 goldDiffuse_a = vec3(.1f, .1f, .1f);
+vec3 goldDiffuse_a = vec3(.8f, .6f, .25f);
 vec3 goldSpecular_a = vec3(1.f, .75f, .3f);
-float goldRd = .05f;
-float goldRs = .95f;
+float goldRd = .5f;
+float goldRs = 1.f;
 float goldnu = 10.f;
-float goldnv = 1000.f;
+float goldnv = 10.f;
 
 // Other variables
 vec3 cam_pos(0, 0, 5), cam_lookAt(0, 0, 0) , cam_up(0, 1, 0);
@@ -80,12 +80,17 @@ void initObjects(){
 	dragon = new OBJObject("objects/bunny.obj");
 
 	// Lights
-	numLights = 1;
-	lightPositions = new float[3 * MAX_LIGHTS];
+	numLights = 2;
+	lightPositions = new float[4 * MAX_LIGHTS];
 	lightColors = new float[3 * MAX_LIGHTS];
 
-	lightPositions[0] = 1.f; lightPositions[1] = 1.f; lightPositions[2] = 0.f; lightPositions[3] = 0.f;
-	lightColors[0] = 1.f; lightColors[1] = 1.f; lightColors[2] = .9f;
+	lightPositions[0] = .1f; lightPositions[1] = -.1f; 
+	lightPositions[2] = 1.f; lightPositions[3] = 0.f;
+	lightColors[0] = 1.f; lightColors[1] = 1.f; lightColors[2] = 1.f;
+
+	lightPositions[4] = -.3f; lightPositions[5] = .6f;
+	lightPositions[6] = -.8f; lightPositions[7] = 0.f;
+	lightColors[3] = .8f; lightColors[4] = .8f; lightColors[5] = .9f;
 
 	// Initialize shaders
 	objShader = phongShader = LoadShaders("shaders/basic.vert", "shaders/phong.frag");
@@ -98,8 +103,8 @@ void initObjects(){
 
 	glUseProgram(ashikhminShader);
 	gold_Ashikhmin = new AshikhminMaterial();
-	((AshikhminMaterial*)gold_Phong)->setMaterial(goldDiffuse_a, goldSpecular_a, goldRd, goldRs);
-	((AshikhminMaterial*)gold_Phong)->setRoughness(goldnu, goldnv);
+	((AshikhminMaterial*)gold_Ashikhmin)->setMaterial(goldDiffuse_a, goldSpecular_a, goldRd, goldRs);
+	((AshikhminMaterial*)gold_Ashikhmin)->setRoughness(goldnu, goldnv);
 	gold_Ashikhmin->getUniformLocs(ashikhminShader);
 
 	dragon->setMaterial(gold_Phong, gold_Ashikhmin);
