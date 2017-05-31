@@ -18,6 +18,7 @@ void setup_callbacks()
 
 	glfwSetCursorPosCallback(window, cursorCallback);
 	glfwSetMouseButtonCallback(window, mouseCallback);
+	glfwSetScrollCallback(window, scrollCallback);
 }
 
 void setup_glew()

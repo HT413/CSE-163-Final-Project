@@ -12,5 +12,6 @@ void displayCallback(GLFWwindow*);
 void keyCallback(GLFWwindow*, int, int, int, int);
 void cursorCallback(GLFWwindow*, double, double);
 void mouseCallback(GLFWwindow*, int, int, int);
+void scrollCallback(GLFWwindow*, double, double);
 
 #endif

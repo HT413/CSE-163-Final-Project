@@ -1,6 +1,7 @@
 #include "Window.h"
 #include "Shader.hpp"
 #include "OBJObject.h"
+#include "Plane.h"
 
 // Window width and height
 int width, height;
@@ -12,7 +13,7 @@ trackballAction mouseAction;
 
 // For shader programs
 bool usingPhong;
-GLuint phongShader, ashikhminShader, objShader;
+GLuint phongShader, ashikhminShader, objShader, texShader;
 
 // Light properties
 const int MAX_LIGHTS = 8;
@@ -33,6 +34,10 @@ float goldRd = .5f;
 float goldRs = 1.f;
 float goldnu = 10.f;
 float goldnv = 10.f;
+
+// For the ground
+vec3 groundColor = vec3(.6f, .6f, .6f);
+Plane *ground;
 
 // Other variables
 vec3 cam_pos(0, 0, 5), cam_lookAt(0, 0, 0) , cam_up(0, 1, 0);
@@ -83,24 +88,24 @@ void initObjects(){
 	numLights = 2;
 	lightPositions = new float[4 * MAX_LIGHTS];
 	lightColors = new float[3 * MAX_LIGHTS];
-
+	// Light 0 - directional
 	lightPositions[0] = .1f; lightPositions[1] = -.1f; 
 	lightPositions[2] = 1.f; lightPositions[3] = 0.f;
 	lightColors[0] = 1.f; lightColors[1] = 1.f; lightColors[2] = 1.f;
-
+	// Light 1 - directional
 	lightPositions[4] = -.3f; lightPositions[5] = .6f;
-	lightPositions[6] = -.8f; lightPositions[7] = 0.f;
-	lightColors[3] = .8f; lightColors[4] = .8f; lightColors[5] = .9f;
+	lightPositions[6] = -.9f; lightPositions[7] = 0.f;
+	lightColors[3] = 1.f; lightColors[4] = 1.f; lightColors[5] = 1.f;
 
 	// Initialize shaders
 	objShader = phongShader = LoadShaders("shaders/basic.vert", "shaders/phong.frag");
 	ashikhminShader = LoadShaders("shaders/basic.vert", "shaders/ashikhmin.frag");
-
+	// Phong shading and the regular material
 	glUseProgram(phongShader);
 	gold_Phong = new RegMaterial();
 	((RegMaterial*)gold_Phong)->setMaterial(goldAmbient, goldDiffuse_p, goldSpecular_p, goldShininess);
 	gold_Phong->getUniformLocs(phongShader);
-
+	// Ashikhmin BRDF and the ashikhmin material
 	glUseProgram(ashikhminShader);
 	gold_Ashikhmin = new AshikhminMaterial();
 	((AshikhminMaterial*)gold_Ashikhmin)->setMaterial(goldDiffuse_a, goldSpecular_a, goldRd, goldRs);
@@ -108,6 +113,15 @@ void initObjects(){
 	gold_Ashikhmin->getUniformLocs(ashikhminShader);
 
 	dragon->setMaterial(gold_Phong, gold_Ashikhmin);
+
+	// Create the ground
+	texShader = LoadShaders("shaders/texture.vert", "shaders/texture.frag");
+	glUseProgram(texShader);
+	ground = new Plane(texShader);
+	ground->setColor(groundColor);
+	ground->setModel(translate(mat4(1), vec3(0, -2.5f, 0)) 
+		* rotate(mat4(1), PI/2.f, vec3(1, 0, 0))
+		* scale(mat4(1), vec3(10, 10, 1)));
 
 	// Misc initializations
 	usingPhong = true;
@@ -119,6 +133,7 @@ void destroyObjects(){
 	if(gold_Ashikhmin) delete gold_Ashikhmin;
 	if(lightPositions) delete[] lightPositions;
 	if(lightColors) delete[] lightColors;
+	if(ground) delete ground;
 }
 
 void resizeCallback(GLFWwindow* window, int w, int h){
@@ -142,6 +157,11 @@ void displayCallback(GLFWwindow* window){
 	// Draw
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	glUseProgram(texShader);
+	glUniformMatrix4fv(glGetUniformLocation(texShader, "projection"), 1, GL_FALSE, &(projection[0][0]));
+	glUniformMatrix4fv(glGetUniformLocation(texShader, "view"), 1, GL_FALSE, &(view[0][0]));
+	ground->draw();
+
 	glUseProgram(objShader);
 	glUniform1i(glGetUniformLocation(objShader, "numLights"), numLights);
 	glUniformMatrix4fv(glGetUniformLocation(objShader, "projection"), 1, GL_FALSE, &(projection[0][0]));
@@ -157,6 +177,7 @@ void displayCallback(GLFWwindow* window){
 	glfwPollEvents();
 }
 
+// Keyboard callback func
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if(action == GLFW_PRESS) {
@@ -175,6 +196,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	}
 }
 
+// Mouse cursor callback func
 void cursorCallback(GLFWwindow* window, double xpos, double ypos)
 {
 	// Camera rotation
@@ -196,6 +218,7 @@ void cursorCallback(GLFWwindow* window, double xpos, double ypos)
 	}
 }
 
+// Mouse button callback func
 void mouseCallback(GLFWwindow* window, int button, int action, int mods)
 {
 	if(action == GLFW_RELEASE) {
@@ -205,4 +228,10 @@ void mouseCallback(GLFWwindow* window, int button, int action, int mods)
 		glfwGetCursorPos(window, &lastX, &lastY);
 		mouseAction = C_ROTATE;
 	}
+}
+
+// Scroll wheel callback func
+void scrollCallback(GLFWwindow* window, double xOffset, double yOffset){
+	cam_pos *= (yOffset > 0)? .99f : 1.01f;
+	view = lookAt(cam_pos, cam_lookAt, cam_up);
 }

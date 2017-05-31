@@ -123,11 +123,14 @@
     <None Include="shaders\ashikhmin.frag" />
     <None Include="shaders\phong.frag" />
     <None Include="shaders\basic.vert" />
+    <None Include="shaders\texture.frag" />
+    <None Include="shaders\texture.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Materials.cpp" />
     <ClCompile Include="OBJObject.cpp" />
+    <ClCompile Include="Plane.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -135,6 +138,7 @@
     <ClInclude Include="main.h" />
     <ClInclude Include="Materials.h" />
     <ClInclude Include="OBJObject.h" />
+    <ClInclude Include="Plane.h" />
     <ClInclude Include="Shader.hpp" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
