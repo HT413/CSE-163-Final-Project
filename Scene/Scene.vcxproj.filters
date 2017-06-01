@@ -16,6 +16,9 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{34e7173e-cecc-4ef5-9843-8ac82a8cd485}</UniqueIdentifier>
     </Filter>
+    <Filter Include="textures">
+      <UniqueIdentifier>{1b2518aa-07a5-47c6-9aec-d9ce61f5d4c0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -34,6 +37,36 @@
     <None Include="shaders\texture.frag">
       <Filter>shaders</Filter>
     </None>
+    <None Include="textures\back.ppm">
+      <Filter>textures</Filter>
+    </None>
+    <None Include="textures\bottom.ppm">
+      <Filter>textures</Filter>
+    </None>
+    <None Include="textures\front.ppm">
+      <Filter>textures</Filter>
+    </None>
+    <None Include="textures\left.ppm">
+      <Filter>textures</Filter>
+    </None>
+    <None Include="textures\right.ppm">
+      <Filter>textures</Filter>
+    </None>
+    <None Include="textures\top.ppm">
+      <Filter>textures</Filter>
+    </None>
+    <None Include="shaders\skybox.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\skybox.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\reflect.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\reflect.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -49,6 +82,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Plane.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Skybox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -72,6 +111,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Plane.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Skybox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

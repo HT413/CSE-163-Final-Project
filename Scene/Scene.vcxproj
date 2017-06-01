@@ -123,14 +123,26 @@
     <None Include="shaders\ashikhmin.frag" />
     <None Include="shaders\phong.frag" />
     <None Include="shaders\basic.vert" />
+    <None Include="shaders\reflect.frag" />
+    <None Include="shaders\reflect.vert" />
+    <None Include="shaders\skybox.frag" />
+    <None Include="shaders\skybox.vert" />
     <None Include="shaders\texture.frag" />
     <None Include="shaders\texture.vert" />
+    <None Include="textures\back.ppm" />
+    <None Include="textures\bottom.ppm" />
+    <None Include="textures\front.ppm" />
+    <None Include="textures\left.ppm" />
+    <None Include="textures\right.ppm" />
+    <None Include="textures\top.ppm" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Materials.cpp" />
     <ClCompile Include="OBJObject.cpp" />
     <ClCompile Include="Plane.cpp" />
+    <ClCompile Include="Skybox.cpp" />
+    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -140,6 +152,8 @@
     <ClInclude Include="OBJObject.h" />
     <ClInclude Include="Plane.h" />
     <ClInclude Include="Shader.hpp" />
+    <ClInclude Include="Skybox.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

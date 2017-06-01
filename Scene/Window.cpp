@@ -2,6 +2,7 @@
 #include "Shader.hpp"
 #include "OBJObject.h"
 #include "Plane.h"
+#include "Skybox.h"
 
 // Window width and height
 int width, height;
@@ -13,7 +14,7 @@ trackballAction mouseAction;
 
 // For shader programs
 bool usingPhong;
-GLuint phongShader, ashikhminShader, objShader, texShader;
+GLuint phongShader, ashikhminShader, objShader, texShader, skyShader;
 
 // Light properties
 const int MAX_LIGHTS = 8;
@@ -30,14 +31,25 @@ float goldShininess = 100.f;
 
 vec3 goldDiffuse_a = vec3(.8f, .6f, .25f);
 vec3 goldSpecular_a = vec3(1.f, .75f, .3f);
-float goldRd = .5f;
-float goldRs = 1.f;
-float goldnu = 10.f;
-float goldnv = 10.f;
+float goldRd = .1f;
+float goldRs = .9f;
+float goldnu = 1.f;
+float goldnv = 100.f;
 
 // For the ground
 vec3 groundColor = vec3(.6f, .6f, .6f);
 Plane *ground;
+
+// Skybox
+const char* texFiles[6] ={
+	"textures/right.ppm",
+	"textures/left.ppm",
+	"textures/top.ppm",
+	"textures/bottom.ppm",
+	"textures/back.ppm",
+	"textures/front.ppm"
+};
+Skybox *skybox;
 
 // Other variables
 vec3 cam_pos(0, 0, 5), cam_lookAt(0, 0, 0) , cam_up(0, 1, 0);
@@ -82,7 +94,7 @@ GLFWwindow* createWindow(int w, int h){
 
 void initObjects(){
 	// Create the model
-	dragon = new OBJObject("objects/bunny.obj");
+	dragon = new OBJObject("objects/dragon.obj");
 
 	// Lights
 	numLights = 2;
@@ -92,9 +104,15 @@ void initObjects(){
 	lightPositions[0] = .1f; lightPositions[1] = -.1f; 
 	lightPositions[2] = 1.f; lightPositions[3] = 0.f;
 	lightColors[0] = 1.f; lightColors[1] = 1.f; lightColors[2] = 1.f;
+	/*
 	// Light 1 - directional
 	lightPositions[4] = -.3f; lightPositions[5] = .6f;
 	lightPositions[6] = -.9f; lightPositions[7] = 0.f;
+	lightColors[3] = 1.f; lightColors[4] = 1.f; lightColors[5] = 1.f;
+	*/
+	// Test light 1 - negation of light 0
+	lightPositions[4] = -.1f; lightPositions[5] = -.1f;
+	lightPositions[6] = -1.f; lightPositions[7] = 0.f;
 	lightColors[3] = 1.f; lightColors[4] = 1.f; lightColors[5] = 1.f;
 
 	// Initialize shaders
@@ -123,6 +141,11 @@ void initObjects(){
 		* rotate(mat4(1), PI/2.f, vec3(1, 0, 0))
 		* scale(mat4(1), vec3(10, 10, 1)));
 
+	// Create skybox
+	skyShader = LoadShaders("shaders/skybox.vert", "shaders/skybox.frag");
+	glUseProgram(skyShader);
+	skybox = new Skybox(texFiles);
+
 	// Misc initializations
 	usingPhong = true;
 }
@@ -134,6 +157,7 @@ void destroyObjects(){
 	if(lightPositions) delete[] lightPositions;
 	if(lightColors) delete[] lightColors;
 	if(ground) delete ground;
+	if(skybox) delete skybox;
 }
 
 void resizeCallback(GLFWwindow* window, int w, int h){
@@ -157,6 +181,9 @@ void displayCallback(GLFWwindow* window){
 	// Draw
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	glUseProgram(skyShader);
+	skybox->display(skyShader, projection, view);
+
 	glUseProgram(texShader);
 	glUniformMatrix4fv(glGetUniformLocation(texShader, "projection"), 1, GL_FALSE, &(projection[0][0]));
 	glUniformMatrix4fv(glGetUniformLocation(texShader, "view"), 1, GL_FALSE, &(view[0][0]));
@@ -169,6 +196,7 @@ void displayCallback(GLFWwindow* window){
 	glUniform3f(glGetUniformLocation(objShader, "camPos"), cam_pos[0], cam_pos[1], cam_pos[2]);
 	glUniform4fv(glGetUniformLocation(objShader, "lights"), numLights, lightPositions);
 	glUniform3fv(glGetUniformLocation(objShader, "lightCols"), numLights, lightColors);
+	if(!usingPhong) skybox->bindTexture(objShader);
 
 	dragon->draw(objShader);
 
