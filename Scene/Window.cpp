@@ -4,8 +4,11 @@
 #include "Plane.h"
 #include "Skybox.h"
 
+#include <FreeImage.h>
+
 // Window width and height
 int width, height;
+int sessionScreenshots;
 
 // For the trackball
 double lastX, lastY;
@@ -29,12 +32,12 @@ vec3 goldDiffuse_p = vec3(.75164f, .60648f, .22648f);
 vec3 goldSpecular_p = vec3(.628281f, .555802f, .366065f);
 float goldShininess = 100.f;
 
-vec3 goldDiffuse_a = vec3(.8f, .6f, .25f);
+vec3 goldDiffuse_a = vec3(.5f, .37f, .15f);
 vec3 goldSpecular_a = vec3(1.f, .75f, .3f);
 float goldRd = .1f;
 float goldRs = .9f;
-float goldnu = 1.f;
-float goldnv = 100.f;
+float goldnu = 5.f;
+float goldnv = 10.f;
 
 // For the ground
 vec3 groundColor = vec3(.6f, .6f, .6f);
@@ -49,6 +52,10 @@ const char* texFiles[6] ={
 	"textures/back.ppm",
 	"textures/front.ppm"
 };
+const char* plainColor[6] ={
+	"textures/plain.ppm", "textures/plain.ppm", "textures/plain.ppm",
+	"textures/plain.ppm", "textures/plain.ppm", "textures/plain.ppm"
+};
 Skybox *skybox;
 
 // Other variables
@@ -56,6 +63,46 @@ vec3 cam_pos(0, 0, 5), cam_lookAt(0, 0, 0) , cam_up(0, 1, 0);
 mat4 projection, view;
 
 OBJObject* dragon;
+
+// Helper func generates random string; len = number of characters, appends ".jpg" to end
+void gen_random(char *s, const int len) {
+	const char alphanum[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+	for(int i = 0; i < len; ++i) {
+		s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+	}
+	int i = sessionScreenshots;
+	int j = 1;
+	do{
+		s[len - j] = '0' + (i % 10);
+		j++;
+		i/=10;
+	} while(i > 0);
+	s[len - j] = '_';
+	s[len] = '.';
+	s[len + 1] = 'p';
+	s[len + 2] = 'n';
+	s[len + 3] = 'g';
+	s[len + 4] = 0;
+}
+
+// Helper func to save a screenshot
+void saveScreenshot() {
+	int pix = width * height;
+	BYTE *pixels = new BYTE[3*pix];
+	glReadBuffer(GL_FRONT);
+	glReadPixels(0, 0, width, height, GL_BGR, GL_UNSIGNED_BYTE, pixels);
+
+	FIBITMAP *img = FreeImage_ConvertFromRawBits(pixels, width, height, width * 3, 24, 0xFF0000, 0x00FF00, 0x0000FF, false);
+
+	char *s = new char[15];
+	gen_random(s, 10);
+	sessionScreenshots++;
+	cout << "Saving screenshot: " << s << endl;
+	FreeImage_Save(FIF_PNG, img, s, 0);
+	delete s;
+	delete pixels;
+}
 
 GLFWwindow* createWindow(int w, int h){
 	// Initialize GLFW
@@ -148,6 +195,7 @@ void initObjects(){
 
 	// Misc initializations
 	usingPhong = true;
+	sessionScreenshots = 0;
 }
 
 void destroyObjects(){
@@ -210,6 +258,11 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 {
 	if(action == GLFW_PRESS) {
 		switch(key) {
+		// Take a screenshot of the application
+		case GLFW_KEY_P:
+			saveScreenshot();
+			break;
+
 		// Toggle between phong shading and ashikhmin shading on pressing "i"
 		case GLFW_KEY_I:
 			usingPhong = !usingPhong;
