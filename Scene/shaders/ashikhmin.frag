@@ -82,7 +82,7 @@ void main(){
 		outgoing = -outgoing;
 	// Do a small shift on the output vector to move it with the object
 	outgoing = normalize(vec3(model * vec4(outgoing, 1.0)));
-	output += rs * specular * vec3(texture(skybox, outgoing));
+	//output += rs * specular * vec3(texture(skybox, outgoing));
 	// Clamp the resulting color just in case
 	if(output.x > 1.0) output.x = 1.0;
 	if(output.y > 1.0) output.y = 1.0;

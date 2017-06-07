@@ -22,6 +22,7 @@ public:
 	Plane(GLuint);
 	~Plane();
 	void draw();
+	void draw(GLuint);
 	void setColor(vec3 c){ color = c; }
 	void setModel(mat4 m){ model = m; }
 };

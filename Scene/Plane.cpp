@@ -38,3 +38,11 @@ void Plane::draw(){
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	glBindVertexArray(0);
 }
+
+void Plane::draw(GLuint shaderProgram){
+	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, &(model[0][0]));
+
+	glBindVertexArray(wallVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
+}

@@ -3,6 +3,8 @@
 #include "OBJObject.h"
 #include "Plane.h"
 #include "Skybox.h"
+#include "Sphere.h"
+#include "DepthMap.h"
 
 #include <FreeImage.h>
 
@@ -17,13 +19,19 @@ trackballAction mouseAction;
 
 // For shader programs
 bool usingPhong;
-GLuint phongShader, ashikhminShader, objShader, texShader, skyShader;
+GLuint phongShader, ashikhminShader, objShader, texShader;
+GLuint skyShader, reflectShader, depthShader;
 
 // Light properties
 const int MAX_LIGHTS = 8;
 int numLights;
 float *lightPositions;
 float *lightColors;
+
+// Depth maps
+DepthMap* depthMaps[MAX_LIGHTS];
+mat4 lightProjections[MAX_LIGHTS];
+mat4 lightViews[MAX_LIGHTS];
 
 // Material properties
 Material *gold_Phong, *gold_Ashikhmin;
@@ -38,6 +46,12 @@ float goldRd = .1f;
 float goldRs = .9f;
 float goldnu = 5.f;
 float goldnv = 10.f;
+
+Material *dull_sphere;
+vec3 sAmbient = vec3(.2f, .2f, .2f);
+vec3 sDiff = vec3(.9f, .9f, .9f);
+vec3 sSpec = vec3(.9f, .9f, .9f);
+float sShine = 1.f;
 
 // For the ground
 vec3 groundColor = vec3(.6f, .6f, .6f);
@@ -59,10 +73,11 @@ const char* plainColor[6] ={
 Skybox *skybox;
 
 // Other variables
-vec3 cam_pos(0, 0, 5), cam_lookAt(0, 0, 0) , cam_up(0, 1, 0);
+vec3 cam_pos(0, 0, 7), cam_lookAt(0, 0, 0) , cam_up(0, 1, 0);
 mat4 projection, view;
 
 OBJObject* dragon;
+Sphere * sphere;
 
 // Helper func generates random string; len = number of characters, appends ".jpg" to end
 void gen_random(char *s, const int len) {
@@ -98,8 +113,8 @@ void saveScreenshot() {
 	char *s = new char[15];
 	gen_random(s, 10);
 	sessionScreenshots++;
-	cout << "Saving screenshot: " << s << endl;
 	FreeImage_Save(FIF_PNG, img, s, 0);
+	cout << "Saved screenshot: " << s << endl;
 	delete s;
 	delete pixels;
 }
@@ -140,36 +155,39 @@ GLFWwindow* createWindow(int w, int h){
 }
 
 void initObjects(){
+	srand(rand() % 32768);
+
 	// Create the model
-	dragon = new OBJObject("objects/dragon.obj");
+	dragon = new OBJObject("objects/bunny.obj");
+	sphere = new Sphere(20, 20);
 
 	// Lights
 	numLights = 2;
 	lightPositions = new float[4 * MAX_LIGHTS];
 	lightColors = new float[3 * MAX_LIGHTS];
 	// Light 0 - directional
-	lightPositions[0] = .1f; lightPositions[1] = -.1f; 
+	lightPositions[0] = .1f; lightPositions[1] = -.4f; 
 	lightPositions[2] = 1.f; lightPositions[3] = 0.f;
 	lightColors[0] = 1.f; lightColors[1] = 1.f; lightColors[2] = 1.f;
-	/*
+	
 	// Light 1 - directional
-	lightPositions[4] = -.3f; lightPositions[5] = .6f;
-	lightPositions[6] = -.9f; lightPositions[7] = 0.f;
-	lightColors[3] = 1.f; lightColors[4] = 1.f; lightColors[5] = 1.f;
-	*/
-	// Test light 1 - negation of light 0
-	lightPositions[4] = -.1f; lightPositions[5] = -.1f;
-	lightPositions[6] = -1.f; lightPositions[7] = 0.f;
+	lightPositions[4] = -.2f; lightPositions[5] = .9f;
+	lightPositions[6] = -.6f; lightPositions[7] = 0.f;
 	lightColors[3] = 1.f; lightColors[4] = 1.f; lightColors[5] = 1.f;
 
 	// Initialize shaders
 	objShader = phongShader = LoadShaders("shaders/basic.vert", "shaders/phong.frag");
 	ashikhminShader = LoadShaders("shaders/basic.vert", "shaders/ashikhmin.frag");
-	// Phong shading and the regular material
+	// Phong shading and the regular materials
 	glUseProgram(phongShader);
 	gold_Phong = new RegMaterial();
 	((RegMaterial*)gold_Phong)->setMaterial(goldAmbient, goldDiffuse_p, goldSpecular_p, goldShininess);
 	gold_Phong->getUniformLocs(phongShader);
+
+	dull_sphere = new RegMaterial();
+	((RegMaterial*)dull_sphere)->setMaterial(sAmbient, sDiff, sSpec, sShine);
+	dull_sphere->getUniformLocs(phongShader);
+
 	// Ashikhmin BRDF and the ashikhmin material
 	glUseProgram(ashikhminShader);
 	gold_Ashikhmin = new AshikhminMaterial();
@@ -178,6 +196,9 @@ void initObjects(){
 	gold_Ashikhmin->getUniformLocs(ashikhminShader);
 
 	dragon->setMaterial(gold_Phong, gold_Ashikhmin);
+
+	sphere->setModel(translate(mat4(1.f), vec3(0.f, 4.f, 0.f)));
+	sphere->setMaterial(dull_sphere);
 
 	// Create the ground
 	texShader = LoadShaders("shaders/texture.vert", "shaders/texture.frag");
@@ -193,6 +214,19 @@ void initObjects(){
 	glUseProgram(skyShader);
 	skybox = new Skybox(texFiles);
 
+	// Environment mapping shader
+	reflectShader = LoadShaders("shaders/reflect.vert", "shaders/reflect.frag");
+
+	// Depth map shader
+	depthShader = LoadShaders("shaders/depthmap.vert", "shaders/depthmap.frag");
+	for(int i = 1; i <= numLights; i++){
+		DepthMap * m = new DepthMap(i);
+		depthMaps[i - 1] = m;
+		vec3 lPos = vec3(lightPositions[4 * (i - 1)], lightPositions[4 * (i - 1) + 1], lightPositions[4 * (i - 1) + 2]);
+		lightProjections[i - 1] = ortho(-10.f, 10.f, -10.f, 10.f, .1f, 1000.f);
+		lightViews[i - 1] = lookAt(lPos, vec3(0, 0, 0), vec3(0, 1, 0));
+	}
+
 	// Misc initializations
 	usingPhong = true;
 	sessionScreenshots = 0;
@@ -202,10 +236,12 @@ void destroyObjects(){
 	if(dragon) delete dragon;
 	if(gold_Phong) delete gold_Phong;
 	if(gold_Ashikhmin) delete gold_Ashikhmin;
-	if(lightPositions) delete[] lightPositions;
-	if(lightColors) delete[] lightColors;
+	if(lightPositions) delete lightPositions;
+	if(lightColors) delete lightColors;
+	if(depthMaps[0]) for(DepthMap*d:depthMaps) delete d;
 	if(ground) delete ground;
 	if(skybox) delete skybox;
+	if(sphere) delete sphere;
 }
 
 void resizeCallback(GLFWwindow* window, int w, int h){
@@ -226,9 +262,23 @@ void update(){
 }
 
 void displayCallback(GLFWwindow* window){
-	// Draw
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// Draw the relevant depth maps for each light
+	for(int i = 0; i < numLights; i++){
+		glUseProgram(depthShader);
+		depthMaps[0]->bind();
+		glUniformMatrix4fv(glGetUniformLocation(depthShader, "projection"), 1, GL_FALSE, &(lightProjections[i][0][0]));
+		glUniformMatrix4fv(glGetUniformLocation(depthShader, "view"), 1, GL_FALSE, &(lightViews[i][0][0]));
 
+		ground->draw(depthShader);
+		sphere->draw(depthShader);
+		dragon->draw(depthShader);
+	}
+
+	
+	// Regular draw here
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, width, height);
 	glUseProgram(skyShader);
 	skybox->display(skyShader, projection, view);
 
@@ -245,9 +295,20 @@ void displayCallback(GLFWwindow* window){
 	glUniform4fv(glGetUniformLocation(objShader, "lights"), numLights, lightPositions);
 	glUniform3fv(glGetUniformLocation(objShader, "lightCols"), numLights, lightColors);
 	if(!usingPhong) skybox->bindTexture(objShader);
-
 	dragon->draw(objShader);
 
+	if(usingPhong){
+		sphere->draw(objShader);
+	}
+	else{
+		glUseProgram(reflectShader);
+		glUniformMatrix4fv(glGetUniformLocation(reflectShader, "projection"), 1, GL_FALSE, &(projection[0][0]));
+		glUniformMatrix4fv(glGetUniformLocation(reflectShader, "view"), 1, GL_FALSE, &(view[0][0]));
+		glUniform3f(glGetUniformLocation(reflectShader, "cameraPos"), cam_pos[0], cam_pos[1], cam_pos[2]);
+		skybox->bindTexture(reflectShader);
+		sphere->draw(reflectShader);
+	}
+	
 	glfwSwapBuffers(window);
 
 	glfwPollEvents();
