@@ -12,6 +12,7 @@ uniform mat4 projection;
 
 // Outputs
 out vec2 texCoords;
+out vec3 origPosition;
 
 void main(){
 	gl_Position = projection * view * model * vec4(pos, 1.0);

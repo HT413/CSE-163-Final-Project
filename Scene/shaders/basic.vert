@@ -13,10 +13,12 @@ uniform mat4 projection;
 // Outputs
 out vec3 position;
 out vec3 normal;
+out vec3 origPosition;
 
 void main(){
 	gl_Position = projection * view * model * vec4(pos, 1.0);
 	vec4 posn = model * vec4(pos, 1.0);
 	position = posn.xyz / posn.w;
 	normal = normalize(transpose(inverse(mat3(model))) * norm);
+	origPosition = pos;
 }

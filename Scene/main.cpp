@@ -46,7 +46,7 @@ void setup_opengl_settings()
 	// You can also use the paramter of GL_LINE instead of GL_FILL to see wireframes
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	// Disable backface culling to render both sides of polygons
-	glDisable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	// Set clear color
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 }
