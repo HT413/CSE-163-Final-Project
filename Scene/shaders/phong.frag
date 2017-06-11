@@ -35,7 +35,7 @@ float shadowFactor(vec3 pos, float bias){
 		vec4 lightRelativePos = lightProjects[i] * lightViews[i] * vec4(pos, 1.0);
 		vec3 hLightRelativePos = lightRelativePos.xyz / lightRelativePos.w;
 		hLightRelativePos = hLightRelativePos * 0.5 + 0.5;
-		float lightDepth = texture(lightMaps[i], hLightRelativePos.xy).r;
+		float lightDepth = texture(lightMaps[i], hLightRelativePos.xy).b;
 		float projectionDepth = hLightRelativePos.z;
 		if((projectionDepth - bias) > lightDepth)
 			result += (1.0 / numLights);
@@ -50,18 +50,18 @@ void main(){
 		vec4 lightPos = lights[i];
 		vec3 lightCol = lightCols[i];
 		vec3 lightDir;
-		if(lightPos.w < 0.0001){ // Directional light
+		if(lightPos.w < 0.01){ // Directional light
 			lightDir = normalize((lightPos).xyz);
 		}
 		else{ // Point light
 			lightDir = lightPos.xyz - position;
 		}
 		vec3 halfVec = normalize(eyeDir + lightDir);
-		float bias = max(10 * SHADOW_BIAS * (1.0 - dot(normal, lightDir)), SHADOW_BIAS);
+		float bias = max(5 * SHADOW_BIAS * (1.0 - dot(normal, lightDir)), SHADOW_BIAS);
 		// Diffuse component
-		output += shadowFactor(origPosition, bias) * (diffuse * lightCol * max(dot(normal, lightDir), 0.0));
+		output += max(dot(normal, lightDir), 0.0) * shadowFactor(origPosition, bias) * diffuse * lightCol;
 		// Specular component
-		output += shadowFactor(origPosition, bias) * (specular * lightCol * pow(max(dot(normal, halfVec), 0.0), shininess));
+		output += pow(max(dot(normal, halfVec), 0.0), shininess) * shadowFactor(origPosition, bias) * specular * lightCol;
 	}
 	fragColor = vec4(output, 1.0);
 }

@@ -77,7 +77,7 @@ Skybox *skybox;
 vec3 cam_pos(0, 0, 7), cam_lookAt(0, 0, 0) , cam_up(0, 1, 0);
 mat4 projection, view;
 
-OBJObject* dragon;
+OBJObject* objModel;
 Sphere * sphere;
 
 // Helper func generates random string; len = number of characters, appends ".jpg" to end
@@ -159,22 +159,17 @@ void initObjects(){
 	srand(rand() % 32768);
 
 	// Create the model
-	dragon = new OBJObject("objects/bunny.obj");
+	objModel = new OBJObject("objects/tank_T72.obj");
 	sphere = new Sphere(20, 20);
 
 	// Lights
-	numLights = 2;
+	numLights = 1;
 	lightPositions = new float[4 * MAX_LIGHTS];
 	lightColors = new float[3 * MAX_LIGHTS];
 	// Light 0 - directional
-	lightPositions[0] = -.3f; lightPositions[1] = .9f; 
-	lightPositions[2] = -.6f; lightPositions[3] = 0.f;
+	lightPositions[0] = .4f; lightPositions[1] = .9f; 
+	lightPositions[2] = -.5f; lightPositions[3] = 0.f;
 	lightColors[0] = 1.f; lightColors[1] = 1.f; lightColors[2] = 1.f;
-	
-	// Light 1 - directional
-	lightPositions[4] = .1f; lightPositions[5] = -.4f;
-	lightPositions[6] = 1.f; lightPositions[7] = 0.f;
-	lightColors[3] = 1.f; lightColors[4] = 1.f; lightColors[5] = 1.f;
 
 	for(int i = 0; i < numLights; i++){
 		texUnits[i] = i + 1;
@@ -200,7 +195,7 @@ void initObjects(){
 	((AshikhminMaterial*)gold_Ashikhmin)->setRoughness(goldnu, goldnv);
 	gold_Ashikhmin->getUniformLocs(ashikhminShader);
 
-	dragon->setMaterial(gold_Phong, gold_Ashikhmin);
+	objModel->setMaterial(gold_Phong, gold_Ashikhmin);
 
 	sphere->setModel(translate(mat4(1.f), vec3(0.f, 4.f, 0.f)));
 	sphere->setMaterial(dull_sphere);
@@ -238,7 +233,7 @@ void initObjects(){
 }
 
 void destroyObjects(){
-	if(dragon) delete dragon;
+	if(objModel) delete objModel;
 	if(gold_Phong) delete gold_Phong;
 	if(gold_Ashikhmin) delete gold_Ashikhmin;
 	if(lightPositions) delete lightPositions;
@@ -270,7 +265,7 @@ void displayCallback(GLFWwindow* window){
 	// Draw the relevant depth maps for each light
 	for(int i = 0; i < numLights; i++){
 		glUseProgram(depthShader);
-		depthMaps[0]->bind();
+		depthMaps[i]->bind();
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
 		glUniformMatrix4fv(glGetUniformLocation(depthShader, "projection"), 1, GL_FALSE, &(lightProjections[i][0][0]));
@@ -278,10 +273,10 @@ void displayCallback(GLFWwindow* window){
 
 		ground->draw(depthShader);
 		sphere->draw(depthShader);
-		dragon->draw(depthShader);
+		objModel->draw(depthShader);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 	// Regular draw here
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDisable(GL_CULL_FACE);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, width, height);
@@ -310,7 +305,7 @@ void displayCallback(GLFWwindow* window){
 	glUniformMatrix4fv(glGetUniformLocation(objShader, "lightProjects"), numLights, GL_FALSE, &(lightProjections[0][0][0]));
 	glUniformMatrix4fv(glGetUniformLocation(objShader, "lightViews"), numLights, GL_FALSE, &(lightViews[0][0][0]));
 	if(!usingPhong) skybox->bindTexture(objShader);
-	dragon->draw(objShader);
+	objModel->draw(objShader);
 
 	if(usingPhong){
 		sphere->draw(objShader);

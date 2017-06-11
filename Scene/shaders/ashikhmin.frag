@@ -47,7 +47,7 @@ float shadowFactor(vec3 pos, float bias){
 		vec4 lightRelativePos = lightProjects[i] * lightViews[i] * vec4(pos, 1.0);
 		vec3 hLightRelativePos = lightRelativePos.xyz / lightRelativePos.w;
 		hLightRelativePos = hLightRelativePos * 0.5 + 0.5;
-		float lightDepth = texture(lightMaps[i], hLightRelativePos.xy).r;
+		float lightDepth = texture(lightMaps[i], hLightRelativePos.xy).b;
 		float projectionDepth = hLightRelativePos.z;
 		if((projectionDepth - bias) > lightDepth)
 			result += (1.0 / numLights);
