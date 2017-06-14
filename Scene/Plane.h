@@ -23,6 +23,7 @@ public:
 	~Plane();
 	void draw();
 	void draw(GLuint);
+	void doTexture(){ useTex = true; }
 	void setColor(vec3 c){ color = c; }
 	void setModel(mat4 m){ model = m; }
 };

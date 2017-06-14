@@ -23,16 +23,13 @@ GLuint phongShader, ashikhminShader, objShader, texShader;
 GLuint skyShader, reflectShader, depthShader;
 
 // Light properties
-const int MAX_LIGHTS = 8;
-int numLights;
-float *lightPositions;
-float *lightColors;
+vec4 lightPosition;
+vec3 lightColor;
 
 // Depth maps
-DepthMap* depthMaps[MAX_LIGHTS];
-mat4 lightProjections[MAX_LIGHTS];
-mat4 lightViews[MAX_LIGHTS];
-int texUnits[MAX_LIGHTS];
+DepthMap* depthMap;
+mat4 lightProjection;
+mat4 lightView;
 
 // Material properties
 Material *gold_Phong, *gold_Ashikhmin;
@@ -57,6 +54,7 @@ float sShine = 1.f;
 // For the ground
 vec3 groundColor = vec3(.6f, .6f, .6f);
 Plane *ground;
+Plane *testScreen;
 
 // Skybox
 const char* texFiles[6] ={
@@ -76,6 +74,7 @@ Skybox *skybox;
 // Other variables
 vec3 cam_pos(0, 0, 7), cam_lookAt(0, 0, 0) , cam_up(0, 1, 0);
 mat4 projection, view;
+const mat4 identityMat = mat4(1.f);
 
 OBJObject* objModel;
 Sphere * sphere;
@@ -162,18 +161,9 @@ void initObjects(){
 	objModel = new OBJObject("objects/tank_T72.obj");
 	sphere = new Sphere(20, 20);
 
-	// Lights
-	numLights = 1;
-	lightPositions = new float[4 * MAX_LIGHTS];
-	lightColors = new float[3 * MAX_LIGHTS];
-	// Light 0 - directional
-	lightPositions[0] = .4f; lightPositions[1] = .9f; 
-	lightPositions[2] = -.5f; lightPositions[3] = 0.f;
-	lightColors[0] = 1.f; lightColors[1] = 1.f; lightColors[2] = 1.f;
-
-	for(int i = 0; i < numLights; i++){
-		texUnits[i] = i + 1;
-	}
+	// Light - directional
+	lightPosition = vec4(.4f, .9f, -.5f, 0.f);
+	lightColor = vec3(1, 1, 1);
 
 	// Initialize shaders
 	objShader = phongShader = LoadShaders("shaders/basic.vert", "shaders/phong.frag");
@@ -197,7 +187,7 @@ void initObjects(){
 
 	objModel->setMaterial(gold_Phong, gold_Ashikhmin);
 
-	sphere->setModel(translate(mat4(1.f), vec3(0.f, 4.f, 0.f)));
+	sphere->setModel(translate(mat4(1.f), vec3(0.f, 3.5f, 0.f)));
 	sphere->setMaterial(dull_sphere);
 
 	// Create the ground
@@ -209,6 +199,10 @@ void initObjects(){
 		* rotate(mat4(1), -PI/2.f, vec3(1, 0, 0))
 		* scale(mat4(1), vec3(50, 50, 1)));
 
+	testScreen = new Plane(texShader);
+	testScreen->setModel(scale(mat4(1), vec3(2, 2, 1)));
+	testScreen->doTexture();
+
 	// Create skybox
 	skyShader = LoadShaders("shaders/skybox.vert", "shaders/skybox.frag");
 	glUseProgram(skyShader);
@@ -219,13 +213,9 @@ void initObjects(){
 
 	// Depth map shader
 	depthShader = LoadShaders("shaders/depthmap.vert", "shaders/depthmap.frag");
-	for(int i = 1; i <= numLights; i++){
-		DepthMap * m = new DepthMap(i);
-		depthMaps[i - 1] = m;
-		vec3 lPos = vec3(lightPositions[4 * (i - 1)], lightPositions[4 * (i - 1) + 1], lightPositions[4 * (i - 1) + 2]);
-		lightProjections[i - 1] = ortho(-10.f, 10.f, -10.f, 10.f, .1f, 1000.f);
-		lightViews[i - 1] = lookAt(lPos, vec3(0, 0, 0), vec3(0, 1, 0));
-	}
+	depthMap = new DepthMap(1);
+	lightProjection = ortho(-10.f, 10.f, -10.f, 10.f, .1f, 15.f);
+	lightView = lookAt(vec3(lightPosition) * 5.f, vec3(0, 0, 0), vec3(0, 1, 0));
 
 	// Misc initializations
 	usingPhong = true;
@@ -236,9 +226,8 @@ void destroyObjects(){
 	if(objModel) delete objModel;
 	if(gold_Phong) delete gold_Phong;
 	if(gold_Ashikhmin) delete gold_Ashikhmin;
-	if(lightPositions) delete lightPositions;
-	if(lightColors) delete lightColors;
-	if(depthMaps[0]) for(DepthMap*d:depthMaps) delete d;
+	if(testScreen) delete testScreen;
+	if(depthMap) delete depthMap;
 	if(ground) delete ground;
 	if(skybox) delete skybox;
 	if(sphere) delete sphere;
@@ -262,20 +251,18 @@ void update(){
 }
 
 void displayCallback(GLFWwindow* window){
-	// Draw the relevant depth maps for each light
-	for(int i = 0; i < numLights; i++){
-		glUseProgram(depthShader);
-		depthMaps[i]->bind();
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_FRONT);
-		glUniformMatrix4fv(glGetUniformLocation(depthShader, "projection"), 1, GL_FALSE, &(lightProjections[i][0][0]));
-		glUniformMatrix4fv(glGetUniformLocation(depthShader, "view"), 1, GL_FALSE, &(lightViews[i][0][0]));
+	// Draw the relevant depth map
+	glUseProgram(depthShader);
+	depthMap->bind();
+	glUniformMatrix4fv(glGetUniformLocation(depthShader, "projection"), 1, GL_FALSE, &(lightProjection[0][0]));
+	glUniformMatrix4fv(glGetUniformLocation(depthShader, "view"), 1, GL_FALSE, &(lightView[0][0]));
 
-		ground->draw(depthShader);
-		sphere->draw(depthShader);
-		objModel->draw(depthShader);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
+	ground->draw(depthShader);
+	sphere->draw(depthShader);
+	objModel->draw(depthShader);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
 	// Regular draw here
 	glDisable(GL_CULL_FACE);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -288,22 +275,21 @@ void displayCallback(GLFWwindow* window){
 	glUseProgram(texShader);
 	glUniformMatrix4fv(glGetUniformLocation(texShader, "projection"), 1, GL_FALSE, &(projection[0][0]));
 	glUniformMatrix4fv(glGetUniformLocation(texShader, "view"), 1, GL_FALSE, &(view[0][0]));
-	glUniform1i(glGetUniformLocation(texShader, "numLights"), numLights);
-	glUniform1iv(glGetUniformLocation(texShader, "lightMaps"), numLights, texUnits);
-	glUniformMatrix4fv(glGetUniformLocation(texShader, "lightProjects"), numLights, GL_FALSE, &(lightProjections[0][0][0]));
-	glUniformMatrix4fv(glGetUniformLocation(texShader, "lightViews"), numLights, GL_FALSE, &(lightViews[0][0][0]));
+	glUniform1i(glGetUniformLocation(texShader, "lightMap"), 1);
+	glUniformMatrix4fv(glGetUniformLocation(texShader, "lightProject"), 1, GL_FALSE, &(lightProjection[0][0]));
+	glUniformMatrix4fv(glGetUniformLocation(texShader, "lightView"), 1, GL_FALSE, &(lightView[0][0]));
+	//testScreen->draw();
 	ground->draw();
-
+	
 	glUseProgram(objShader);
-	glUniform1i(glGetUniformLocation(objShader, "numLights"), numLights);
 	glUniformMatrix4fv(glGetUniformLocation(objShader, "projection"), 1, GL_FALSE, &(projection[0][0]));
 	glUniformMatrix4fv(glGetUniformLocation(objShader, "view"), 1, GL_FALSE, &(view[0][0]));
 	glUniform3f(glGetUniformLocation(objShader, "camPos"), cam_pos[0], cam_pos[1], cam_pos[2]);
-	glUniform4fv(glGetUniformLocation(objShader, "lights"), numLights, lightPositions);
-	glUniform3fv(glGetUniformLocation(objShader, "lightCols"), numLights, lightColors);
-	glUniform1iv(glGetUniformLocation(objShader, "lightMaps"), numLights, texUnits);
-	glUniformMatrix4fv(glGetUniformLocation(objShader, "lightProjects"), numLights, GL_FALSE, &(lightProjections[0][0][0]));
-	glUniformMatrix4fv(glGetUniformLocation(objShader, "lightViews"), numLights, GL_FALSE, &(lightViews[0][0][0]));
+	glUniform4fv(glGetUniformLocation(objShader, "lightPos"), 1, &lightPosition[0]);
+	glUniform3fv(glGetUniformLocation(objShader, "lightCol"), 1, &lightColor[0]);
+	glUniform1i(glGetUniformLocation(objShader, "lightMap"), 1);
+	glUniformMatrix4fv(glGetUniformLocation(objShader, "lightProject"), 1, GL_FALSE, &(lightProjection[0][0]));
+	glUniformMatrix4fv(glGetUniformLocation(objShader, "lightView"), 1, GL_FALSE, &(lightView[0][0]));
 	if(!usingPhong) skybox->bindTexture(objShader);
 	objModel->draw(objShader);
 

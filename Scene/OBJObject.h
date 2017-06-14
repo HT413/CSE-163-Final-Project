@@ -23,6 +23,7 @@ public:
 	OBJObject(const char* filepath);
 	~OBJObject();
 
+	void setModel(mat4 m){ model = m; }
 	void parse(const char* filepath);
 	void draw(GLuint shaderProgram);
 	void setMaterial(Material* a, Material* b){ mat = a; a_mat = b; }

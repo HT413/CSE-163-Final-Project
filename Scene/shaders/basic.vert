@@ -20,5 +20,5 @@ void main(){
 	vec4 posn = model * vec4(pos, 1.0);
 	position = posn.xyz / posn.w;
 	normal = normalize(transpose(inverse(mat3(model))) * norm);
-	origPosition = pos;
+	origPosition = vec3(model * vec4(pos, 1.0));
 }
