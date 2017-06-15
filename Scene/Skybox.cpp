@@ -19,6 +19,7 @@ Skybox::Skybox(const char** textures)
 		faces.push_back(textures[i]);
 	}
 	skyTextures = loadCubemap(faces);
+	envTextures = loadCubemap2(faces);
 }
 
 
@@ -27,6 +28,7 @@ Skybox::~Skybox()
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteTextures(1, &skyTextures);
+	glDeleteTextures(1, &envTextures);
 }
 
 GLuint Skybox::loadCubemap(std::vector<const GLchar*> faces){
@@ -54,6 +56,38 @@ GLuint Skybox::loadCubemap(std::vector<const GLchar*> faces){
 	return textureID;
 }
 
+GLuint Skybox::loadCubemap2(std::vector<const GLchar*> faces){
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+
+	int width, height;
+	unsigned char* image;
+
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+	for(GLuint i = 0; i < faces.size(); i++)
+	{
+		image = loadPPM(faces[i], width, height);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+		delete(image);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	return textureID;
+}
+
+void Skybox::rebindReflection(int i){
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, envTextures);
+	glReadBuffer(GL_BACK);
+	glCopyTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, 0, 0, 512, 512, 0);
+}
+
 void Skybox::display(GLuint shaderProgram, mat4 proj, mat4 modelv){
 	// Disable depth writes
 	glDepthMask(GL_FALSE);
@@ -74,4 +108,10 @@ void Skybox::bindTexture(GLuint shaderProgram){
 	glActiveTexture(GL_TEXTURE0);
 	glUniform1i(glGetUniformLocation(shaderProgram, "skybox"), 0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyTextures);
+}
+
+void Skybox::bindReflection(GLuint shaderProgram){
+	glActiveTexture(GL_TEXTURE8);
+	glUniform1i(glGetUniformLocation(shaderProgram, "skybox"), 8);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, envTextures);
 }

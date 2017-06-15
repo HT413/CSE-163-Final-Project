@@ -11,14 +11,14 @@ in vec3 origPosition;
 
 // Uniform variables
 const float SHADOW_BIAS = 0.005;
-uniform sampler2D lightMap;
-uniform mat4 lightProject;
-uniform mat4 lightView;
+uniform sampler2D lightMap[8];
+uniform mat4 lightProject[8];
+uniform mat4 lightView[8];
 
 uniform int numLights;
 uniform vec3 camPos;
-uniform vec3 lightCol;
-uniform vec4 lightPos;
+uniform vec3 lightCol[8];
+uniform vec4 lightPos[8];
 uniform samplerCube skybox;
 
 uniform float n_u;
@@ -41,15 +41,28 @@ float rand(vec2 co)
 
 float shadowFactor(vec3 pos, float bias){
 	float result = 0.0;
-	vec4 lightRelativePos = lightProject * lightView * vec4(pos, 1.0);
-	vec3 hLightRelativePos = lightRelativePos.xyz / lightRelativePos.w;
-	hLightRelativePos = hLightRelativePos * 0.5 + 0.5;
-	float lightDepth = texture(lightMap, hLightRelativePos.xy).b;
-	float projectionDepth = hLightRelativePos.z;
-	if(projectionDepth > 1.0) return 1.0;
-	if((projectionDepth - bias) > lightDepth)
-		result = 1.0;
-	return 1.0 - result;
+	for(int i = 0; i < numLights; i++){
+		vec4 lightRelativePos = lightProject[i] * lightView[i] * vec4(pos, 1.0);
+		vec3 hLightRelativePos = lightRelativePos.xyz / lightRelativePos.w;
+		hLightRelativePos = hLightRelativePos * 0.5 + 0.5;
+		vec2 texelSize = 1.0 / textureSize(lightMap[i], 0);
+		for(int dx = -1; dx <= 1; dx++){
+			for(int dy = -1; dy <= 1; dy++){
+				float lightDepth = texture(lightMap[i], hLightRelativePos.xy + vec2(dx, dy) * texelSize).r;
+				float projectionDepth = hLightRelativePos.z;
+				if(projectionDepth > 1.0) return 1.0;
+				if((projectionDepth - bias) > lightDepth){
+					if(dx == 0 && dy == 0)
+						result += 9.0 / numLights;
+					else if(dx == 0 || dy == 0)
+						result += 3.0 / numLights;
+					else
+						result += 1.0 / numLights;
+				}
+			}
+		}
+	}
+	return 1.0 - result / 25.0;
 }
 
 void main(){
@@ -75,24 +88,27 @@ void main(){
 	
 	// Calculate direct lighting
 	vec3 k2;
-	if(lightPos.w < 0.001){
-		k2 = normalize(vec3(lightPos));
-	} else{
-		k2 = normalize(vec3(lightPos) - position);
+	for(int i = 0; i < numLights; i++){
+		if(lightPos[i].w < 0.001){
+			k2 = normalize(vec3(lightPos[i]));
+		} else{
+			k2 = normalize(vec3(lightPos[i]) - position);
+		}
+		vec3 halfVec = normalize(k1 + k2);
+		float fresnel = rs + (1.0 - rs) * pow(1.0 - dot(k1, halfVec), 5);
+		float spec = (sqrt((n_u + 1.0) * (n_v + 1.0)) / (8.0)) * fresnel *
+			pow(dot(normal, halfVec), ((n_u * pow(dot(halfVec, uVec), 2) + n_v *
+			pow(dot(halfVec, vVec), 2)) / (1.0 - pow(dot(halfVec, normal), 2)))) /
+			(dot(halfVec, k1) * max(dot(normal, k1), dot(normal, k2)));
+		float diff = ((28.0 * rd) / (23.0)) * rd *		(1.0 - pow(1.0 - dot(normal, k1) / 2.f, 5)) *		(1.0 - pow(1.0 - dot(normal, k2) / 2.f, 5));
+		// Clamp just in case
+		if(diff < 0) diff = 0.0; if(diff > 1) diff = 1.0;
+		if(spec < 0) spec = 0.0; if(spec > 1) spec = 1.0;
+		float bias = max(10 * SHADOW_BIAS * (1.0 - dot(normal, k2)), SHADOW_BIAS);
+		output += shadowFactor(origPosition, bias) * (diff * diffuse * lightCol[i] + spec * specular * lightCol[i]);
 	}
-	vec3 halfVec = normalize(k1 + k2);
-	float fresnel = rs + (1.0 - rs) * pow(1.0 - dot(k1, halfVec), 5);
-	float spec = (sqrt((n_u + 1.0) * (n_v + 1.0)) / (8.0)) * fresnel *
-		pow(dot(normal, halfVec), ((n_u * pow(dot(halfVec, uVec), 2) + n_v *
-		pow(dot(halfVec, vVec), 2)) / (1.0 - pow(dot(halfVec, normal), 2)))) /
-		(dot(halfVec, k1) * max(dot(normal, k1), dot(normal, k2)));
-	float diff = ((28.0 * rd) / (23.0)) * rd *	(1.0 - pow(1.0 - dot(normal, k1) / 2.f, 5)) *	(1.0 - pow(1.0 - dot(normal, k2) / 2.f, 5));
-	// Clamp just in case
-	if(diff < 0) diff = 0.0; if(diff > 1) diff = 1.0;
-	if(spec < 0) spec = 0.0; if(spec > 1) spec = 1.0;
-	float bias = max(10 * SHADOW_BIAS * (1.0 - dot(normal, k2)), SHADOW_BIAS);
-	output += shadowFactor(origPosition, bias) * (diff * diffuse * lightCol + spec * specular * lightCol);
-	
+
+
 	// Now do an estimate of indirect lighting
 	vec3 outgoing = reflect(k1, hVec);
 	if(dot(outgoing, normal) < 0) 

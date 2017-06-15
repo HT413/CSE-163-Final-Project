@@ -55,14 +55,17 @@ class Skybox
 {
 private:
 	GLuint VAO, VBO;
-	GLuint skyTextures;
+	GLuint skyTextures, envTextures;
 
 public:
 	Skybox(const char**);
 	~Skybox();
 	GLuint loadCubemap(std::vector<const GLchar*>);
+	GLuint loadCubemap2(std::vector<const GLchar*>);
+	void rebindReflection(int);
 	void display(GLuint shaderProgram, mat4 proj, mat4 modelv);
 	void bindTexture(GLuint);
+	void bindReflection(GLuint);
 };
 
 #endif

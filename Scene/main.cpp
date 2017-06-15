@@ -76,6 +76,11 @@ int main(void)
 	// Initialize objects/pointers for rendering
 	initObjects();
 
+	for(int i = 0; i < 6; i++){
+		if(i == 2) continue;
+		renderReflection(window, i);
+	}
+
 	// Loop while GLFW window should stay open
 	while(!glfwWindowShouldClose(window))
 	{

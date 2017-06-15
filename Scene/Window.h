@@ -9,6 +9,7 @@ GLFWwindow* createWindow(int, int);
 void resizeCallback(GLFWwindow*, int, int);
 void update();
 void displayCallback(GLFWwindow*);
+void renderReflection(GLFWwindow*, int);
 void keyCallback(GLFWwindow*, int, int, int, int);
 void cursorCallback(GLFWwindow*, double, double);
 void mouseCallback(GLFWwindow*, int, int, int);
