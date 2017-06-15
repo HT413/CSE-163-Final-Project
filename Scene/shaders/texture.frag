@@ -12,6 +12,7 @@ uniform mat4 lightProject[8];
 uniform mat4 lightView[8];
 
 uniform int isTexturing;
+uniform int isShadowMap;
 uniform vec3 color;
 
 // Outputs
@@ -48,6 +49,10 @@ void main(){
 		fragColor = texture(lightMap[1], texCoords);
 	}
 	else{
-		fragColor = vec4(shadowFactor(origPosition) * color, 1.0);
+		if(isShadowMap > 0){
+			fragColor = vec4(shadowFactor(origPosition) * color, 1.0);
+		} else{
+			fragColor = vec4(color, 1.0);
+		}
 	}
 }

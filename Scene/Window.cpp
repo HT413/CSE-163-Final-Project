@@ -83,6 +83,8 @@ vec3 groundColor = vec3(.6f, .6f, .6f);
 Plane *ground;
 Plane *testScreen;
 
+bool isShadowMapping, showSphere;
+
 // Skybox
 const char* texFiles[6] ={
 	"textures/right.ppm",
@@ -102,7 +104,7 @@ Skybox *skybox;
 vec3 cam_pos(0, 0, 7), cam_lookAt(0, 0, 0) , cam_up(0, 1, 0);
 mat4 projection, view;
 const mat4 identityMat = mat4(1.f);
-vec3 sphereElevation = vec3(0, 4.f, 0);
+vec3 sphereElevation = vec3(0, 3.5f, 0);
 
 OBJObject* objModel, *objModel2, *objModel3;
 Sphere * sphere;
@@ -189,9 +191,9 @@ void initObjects(){
 	objModel = new OBJObject("objects/dragon.obj");
 	objModel->setModel(translate(mat4(1.f), vec3(0, -.78f, 0)) * rotate(mat4(1.f), PI/2.f, vec3(0, 1, 0)));
 	objModel2 = new OBJObject("objects/dragon.obj");
-	objModel2->setModel(translate(mat4(1.f), vec3(-2.f, -.78f, 0)) * rotate(mat4(1.f), PI/2.f, vec3(0, 1, 0)));
+	objModel2->setModel(translate(mat4(1.f), vec3(-2.5f, -.78f, 0)) * rotate(mat4(1.f), PI/2.f, vec3(0, 1, 0)));
 	objModel3 = new OBJObject("objects/dragon.obj");
-	objModel3->setModel(translate(mat4(1.f), vec3(2.f, -.78f, 0)) * rotate(mat4(1.f), PI/2.f, vec3(0, 1, 0)));
+	objModel3->setModel(translate(mat4(1.f), vec3(2.5f, -.78f, 0)) * rotate(mat4(1.f), PI/2.f, vec3(0, 1, 0)));
 	sphere = new Sphere(20, 20);
 
 	// Lights - directional
@@ -284,6 +286,8 @@ void initObjects(){
 	// Misc initializations
 	usingPhong = true;
 	sessionScreenshots = 0;
+	showSphere = true;
+	isShadowMapping = true;
 }
 
 void destroyObjects(){
@@ -328,7 +332,7 @@ void renderReflection(GLFWwindow* window, int side){
 		glUniformMatrix4fv(glGetUniformLocation(depthShader, "view"), 1, GL_FALSE, &(lightView[i][0][0]));
 
 		ground->draw(depthShader);
-		sphere->draw(depthShader);
+		if(showSphere) sphere->draw(depthShader);
 		objModel->draw(depthShader);
 		objModel2->draw(depthShader);
 		objModel3->draw(depthShader);
@@ -366,9 +370,10 @@ void renderReflection(GLFWwindow* window, int side){
 	glUniformMatrix4fv(glGetUniformLocation(texShader, "view"), 1, GL_FALSE, &(sView[0][0]));
 	glUniform1iv(glGetUniformLocation(texShader, "lightMap"), numLights, maps);
 	glUniform1i(glGetUniformLocation(texShader, "numLights"), numLights);
+	glUniform1i(glGetUniformLocation(texShader, "isShadowMap"), (isShadowMapping)? 1 : 0);
 	glUniformMatrix4fv(glGetUniformLocation(texShader, "lightProject"), numLights, GL_FALSE, &(lightProjection[0][0][0]));
 	glUniformMatrix4fv(glGetUniformLocation(texShader, "lightView"), numLights, GL_FALSE, &(lightView[0][0][0]));
-
+	//testScreen->draw();
 	ground->draw();
 
 	glUseProgram(objShader);
@@ -379,6 +384,7 @@ void renderReflection(GLFWwindow* window, int side){
 	glUniform3fv(glGetUniformLocation(objShader, "lightCol"), numLights, &lightColor[0][0]);
 	glUniform1iv(glGetUniformLocation(objShader, "lightMap"), numLights, maps);
 	glUniform1i(glGetUniformLocation(objShader, "numLights"), numLights);
+	glUniform1i(glGetUniformLocation(objShader, "isShadowMap"), (isShadowMapping)? 1 : 0);
 	glUniformMatrix4fv(glGetUniformLocation(objShader, "lightProject"), numLights, GL_FALSE, &(lightProjection[0][0][0]));
 	glUniformMatrix4fv(glGetUniformLocation(objShader, "lightView"), numLights, GL_FALSE, &(lightView[0][0][0]));
 	if(!usingPhong) skybox->bindTexture(objShader);
@@ -398,7 +404,7 @@ void displayCallback(GLFWwindow* window){
 		glUniformMatrix4fv(glGetUniformLocation(depthShader, "view"), 1, GL_FALSE, &(lightView[i][0][0]));
 
 		ground->draw(depthShader);
-		sphere->draw(depthShader);
+		if(showSphere) sphere->draw(depthShader);
 		objModel->draw(depthShader);
 		objModel2->draw(depthShader);
 		objModel3->draw(depthShader);
@@ -421,11 +427,12 @@ void displayCallback(GLFWwindow* window){
 	glUniformMatrix4fv(glGetUniformLocation(texShader, "view"), 1, GL_FALSE, &(view[0][0]));
 	glUniform1iv(glGetUniformLocation(texShader, "lightMap"), numLights, maps);
 	glUniform1i(glGetUniformLocation(texShader, "numLights"), numLights);
+	glUniform1i(glGetUniformLocation(texShader, "isShadowMap"), (isShadowMapping)? 1 : 0);
 	glUniformMatrix4fv(glGetUniformLocation(texShader, "lightProject"), numLights, GL_FALSE, &(lightProjection[0][0][0]));
 	glUniformMatrix4fv(glGetUniformLocation(texShader, "lightView"), numLights, GL_FALSE, &(lightView[0][0][0]));
 	//testScreen->draw();
 	ground->draw();
-	//
+	
 	glUseProgram(objShader);
 	glUniformMatrix4fv(glGetUniformLocation(objShader, "projection"), 1, GL_FALSE, &(projection[0][0]));
 	glUniformMatrix4fv(glGetUniformLocation(objShader, "view"), 1, GL_FALSE, &(view[0][0]));
@@ -434,6 +441,7 @@ void displayCallback(GLFWwindow* window){
 	glUniform3fv(glGetUniformLocation(objShader, "lightCol"), numLights, &lightColor[0][0]);
 	glUniform1iv(glGetUniformLocation(objShader, "lightMap"), numLights, maps);
 	glUniform1i(glGetUniformLocation(objShader, "numLights"), numLights);
+	glUniform1i(glGetUniformLocation(objShader, "isShadowMap"), (isShadowMapping)? 1 : 0);
 	glUniformMatrix4fv(glGetUniformLocation(objShader, "lightProject"), numLights, GL_FALSE, &(lightProjection[0][0][0]));
 	glUniformMatrix4fv(glGetUniformLocation(objShader, "lightView"), numLights, GL_FALSE, &(lightView[0][0][0]));
 	if(!usingPhong) skybox->bindTexture(objShader);
@@ -441,16 +449,18 @@ void displayCallback(GLFWwindow* window){
 	objModel2->draw(objShader);
 	objModel3->draw(objShader);
 
-	if(usingPhong){
-		sphere->draw(objShader);
-	}
-	else{
-		glUseProgram(reflectShader);
-		glUniformMatrix4fv(glGetUniformLocation(reflectShader, "projection"), 1, GL_FALSE, &(projection[0][0]));
-		glUniformMatrix4fv(glGetUniformLocation(reflectShader, "view"), 1, GL_FALSE, &(view[0][0]));
-		glUniform3f(glGetUniformLocation(reflectShader, "cameraPos"), cam_pos[0], cam_pos[1], cam_pos[2]);
-		skybox->bindReflection(reflectShader);
-		sphere->draw(reflectShader);
+	if(showSphere){
+		if(usingPhong){
+			sphere->draw(objShader);
+		}
+		else{
+			glUseProgram(reflectShader);
+			glUniformMatrix4fv(glGetUniformLocation(reflectShader, "projection"), 1, GL_FALSE, &(projection[0][0]));
+			glUniformMatrix4fv(glGetUniformLocation(reflectShader, "view"), 1, GL_FALSE, &(view[0][0]));
+			glUniform3f(glGetUniformLocation(reflectShader, "cameraPos"), cam_pos[0], cam_pos[1], cam_pos[2]);
+			skybox->bindReflection(reflectShader);
+			sphere->draw(reflectShader);
+		}
 	}
 	
 	glfwSwapBuffers(window);
@@ -472,6 +482,24 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		case GLFW_KEY_I:
 			usingPhong = !usingPhong;
 			objShader = (usingPhong)? phongShader : ashikhminShader;
+			for(int i = 0; i < 6; i++){
+				if(i == 2) continue;
+				renderReflection(window, i);
+			}
+			break;
+
+		// Toggle displaying the sphere
+		case GLFW_KEY_S:
+			showSphere = !showSphere;
+			break;
+
+		// Toggle shadow mapping
+		case GLFW_KEY_M:
+			isShadowMapping = !isShadowMapping;	
+			for(int i = 0; i < 6; i++){
+				if(i == 2) continue;
+				renderReflection(window, i);
+			}
 			break;
 
 		// Kill the program on pressing Esc

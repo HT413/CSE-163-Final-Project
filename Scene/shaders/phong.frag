@@ -11,6 +11,7 @@ in vec3 origPosition;
 // Uniform variables
 const float SHADOW_BIAS = 0.005;
 uniform int numLights;
+uniform int isShadowMap;
 uniform sampler2D lightMap[8];
 uniform mat4 lightProject[8];
 uniform mat4 lightView[8];
@@ -68,9 +69,17 @@ void main(){
 		vec3 halfVec = normalize(eyeDir + lightDir);
 		float bias = max(10 * SHADOW_BIAS * (1.0 - dot(normal, lightDir)), SHADOW_BIAS);
 		// Diffuse component
-		output += max(dot(normal, lightDir), 0.0) * shadowFactor(origPosition, bias) * diffuse * lightCol[i];
+		if(isShadowMap > 0){
+			output += max(dot(normal, lightDir), 0.0) * shadowFactor(origPosition, bias) * diffuse * lightCol[i];
+		} else{
+			output += max(dot(normal, lightDir), 0.0) * diffuse * lightCol[i];
+		}
 		// Specular component
-		output += pow(max(dot(normal, halfVec), 0.0), shininess) * shadowFactor(origPosition, bias) * specular * lightCol[i];
+		if(isShadowMap > 0){
+			output += pow(max(dot(normal, halfVec), 0.0), shininess) * shadowFactor(origPosition, bias) * specular * lightCol[i];
+		} else{
+			output += pow(max(dot(normal, halfVec), 0.0), shininess) * specular * lightCol[i];
+		}
 	}
 
 	fragColor = vec4(output, 1.0);

@@ -15,6 +15,7 @@ uniform sampler2D lightMap[8];
 uniform mat4 lightProject[8];
 uniform mat4 lightView[8];
 
+uniform int isShadowMap;
 uniform int numLights;
 uniform vec3 camPos;
 uniform vec3 lightCol[8];
@@ -105,9 +106,12 @@ void main(){
 		if(diff < 0) diff = 0.0; if(diff > 1) diff = 1.0;
 		if(spec < 0) spec = 0.0; if(spec > 1) spec = 1.0;
 		float bias = max(10 * SHADOW_BIAS * (1.0 - dot(normal, k2)), SHADOW_BIAS);
-		output += shadowFactor(origPosition, bias) * (diff * diffuse * lightCol[i] + spec * specular * lightCol[i]);
+		if(isShadowMap > 0){
+			output += shadowFactor(origPosition, bias) * (diff * diffuse * lightCol[i] + spec * specular * lightCol[i]);
+		} else{
+			output += (diff * diffuse * lightCol[i] + spec * specular * lightCol[i]);
+		}
 	}
-
 
 	// Now do an estimate of indirect lighting
 	vec3 outgoing = reflect(k1, hVec);
